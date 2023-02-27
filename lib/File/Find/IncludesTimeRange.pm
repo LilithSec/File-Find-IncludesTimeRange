@@ -57,11 +57,35 @@ our $VERSION = '0.0.1';
 
 =head2 find
 
+Searches through a list of items , finds the ones that appear to be timestamped.
+It will then sort the found time stamps and return the ones that include the
+specified time periods.
+
+There following options are taken.
+
+    - items :: A array ref of items to examine.
+
+    - start :: A Time::Piece object set to the start time.
+
+    - end :: A Time::Piece object set to the end time.
+
+    - regex :: A regex to use for matching the files. Requires uses of the named
+               group 'timestamp' for capturing the timestamp. If it includes micro
+               seconds in it, since Time::Piece->strptime does not handle those,
+               those can be captured via the group 'subsec'. They will then be
+               appended to to the epoch time of any parsed timestamp for sorting
+               purposes.
+        - Default :: (?<timestamp>\d\d\d\d\d\d+)(\.pcap|(?<subsec>\.\d+)\.pcap)$
+
+    - strptime :: The format for use with L<Time::Piece>->strptime.
+        - Default :: %s
+
 =cut
 
 sub find {
 	my ( $blank, %opts ) = @_;
 
+	# some basic error checking
 	if ( !defined( $opts{start} ) ) {
 		die('$opts{start} is undef');
 	}
@@ -81,6 +105,10 @@ sub find {
 		die('$opts{items} is not a ARRAY');
 	}elsif ( $opts{start} > $opts{end} ) {
 		die('$opts{start} is greater than $opts{end}');
+	}
+
+	if (!defined($opts{strptime}) ) {
+		$opts{strptime}='%s';
 	}
 
 	if (!defined($opts{regex})) {
