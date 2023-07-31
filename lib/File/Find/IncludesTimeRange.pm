@@ -120,8 +120,6 @@ sub find {
 	# a HoA of found timestamps
 	# each value is a array containing files for that time stamp
 	my $found          = {};
-	# a hash just being used for storing timestamps for de-duping them
-#	my $timestamp_save = {};
 	foreach my $item ( @{ $opts{items} } ) {
 		if ( $item =~ /$opts{regex}/ ) {
 			my $subsec        = '';
@@ -148,7 +146,6 @@ sub find {
 			if ( defined($full_timestamp) ) {
 				if ( !defined( $found->{$full_timestamp} ) ) {
 					$found->{$full_timestamp}          = [];
-#					$timestamp_save->{$full_timestamp} = $timestamp;
 				}
 				push( @{ $found->{$full_timestamp} }, $item );
 			}
@@ -158,11 +155,8 @@ sub find {
 	my @found_timestamps = sort( keys( %{$found} ) );
 	my $previous_timestamp;
 	my $previous_found;
-#	my $previous_t;
 	my @timestamp_to_return;
 	foreach my $current_timestamp (@found_timestamps) {
-#		my $t = $timestamp_save->{$current_timestamp};
-
 		if ( ( $start <= $current_timestamp ) && ( $current_timestamp <= $end ) ) {
 			push( @timestamp_to_return, $current_timestamp );
 
@@ -176,13 +170,12 @@ sub find {
 		} ## end if ( ( $opts{start} <= $t ) && ( $t <= $opts...))
 
 		# if the time period falls between when two files was created, we will find
-		if ( !$previous_found && defined($previous_timestamp) && ( $opts{end} < $current_timestamp ) ) {
+		if ( !$previous_found && defined($previous_timestamp) && ( $end < $current_timestamp ) ) {
 			$previous_found = 1;
 			push( @timestamp_to_return, $previous_timestamp );
 		}
 
 		$previous_timestamp = $current_timestamp;
-#		$previous_t         = $current_timestamp;
 	} ## end foreach my $current_timestamp (@found_timestamps)
 
 	my $to_return = [];
