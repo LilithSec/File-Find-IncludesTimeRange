@@ -11,11 +11,11 @@ File::Find::IncludesTimeRange - Takes a array of time stamped items(largely mean
 
 =head1 VERSION
 
-Version 0.0.1
+Version 0.1.0
 
 =cut
 
-our $VERSION = '0.0.1';
+our $VERSION = '0.1.0';
 
 =head1 SYNOPSIS
 
@@ -172,6 +172,11 @@ sub find {
 		$previous_timestamp = $current_timestamp;
 	} ## end foreach my $current_timestamp (@found_timestamps)
 
+	# if we did not find anything and we have timestamps,
+	# and the last timestamp is before the end, add it...
+	#
+	# this happens when the time frame desired is after any of the timestamps
+	# such as will happen with a start of now-30 and a end of now
 	if (  !defined( $timestamp_to_return[0] )
 		&& defined( $found_timestamps[0] )
 		&& $found_timestamps[$#found_timestamps] <= $end )
