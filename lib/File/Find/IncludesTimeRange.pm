@@ -80,6 +80,10 @@ There following options are taken.
     - strptime :: The format for use with L<Time::Piece>->strptime.
         - Default :: %s
 
+    - ts_is_unixtime :: Skips using Time::Piece and strptime as it is just a simple
+                        numeric test. For this subsecs should be included in the
+                        capture group 'timestamp' for the regex.
+
 =cut
 
 sub find {
@@ -88,23 +92,17 @@ sub find {
 	# some basic error checking
 	if ( !defined( $opts{start} ) ) {
 		die('$opts{start} is undef');
-	}
-	elsif ( !defined( $opts{end} ) ) {
+	} elsif ( !defined( $opts{end} ) ) {
 		die('$opts{end} is undef');
-	}
-	elsif ( !defined( $opts{items} ) ) {
+	} elsif ( !defined( $opts{items} ) ) {
 		die('$opts{items} is undef');
-	}
-	elsif ( ref( $opts{start} ) ne 'Time::Piece' ) {
+	} elsif ( ref( $opts{start} ) ne 'Time::Piece' ) {
 		die('$opts{start} is not a Time::Piece object');
-	}
-	elsif ( ref( $opts{end} ) ne 'Time::Piece' ) {
+	} elsif ( ref( $opts{end} ) ne 'Time::Piece' ) {
 		die('$opts{end} is not a Time::Piece object');
-	}
-	elsif ( ref( $opts{items} ) ne 'ARRAY' ) {
+	} elsif ( ref( $opts{items} ) ne 'ARRAY' ) {
 		die('$opts{items} is not a ARRAY');
-	}
-	elsif ( $opts{start} > $opts{end} ) {
+	} elsif ( $opts{start} > $opts{end} ) {
 		die('$opts{start} is greater than $opts{end}');
 	}
 
@@ -119,8 +117,11 @@ sub find {
 	my $start = $opts{start}->epoch;
 	my $end   = $opts{end}->epoch;
 
+	# a HoA of found timestamps
+	# each value is a array containing files for that time stamp
 	my $found          = {};
-	my $timestamp_save = {};
+	# a hash just being used for storing timestamps for de-duping them
+#	my $timestamp_save = {};
 	foreach my $item ( @{ $opts{items} } ) {
 		if ( $item =~ /$opts{regex}/ ) {
 			my $subsec        = '';
@@ -130,48 +131,59 @@ sub find {
 			}
 
 			my $timestamp;
-			eval { $timestamp = Time::Piece->strptime( $timestamp_raw, $opts{strptime} ); };
-			if ( !$@ && defined($timestamp) ) {
-				my $full_timestamp = $timestamp->epoch . $subsec;
+			my $full_timestamp;
+			if ( !$opts{ts_is_unixtime} ) {
+				# we have one we actually need to parse.... attempt to
+				# and if we can get the time stamp
+				eval { $timestamp = Time::Piece->strptime( $timestamp_raw, $opts{strptime} ); };
+				if ( !$@ && defined($timestamp) ) {
+					$full_timestamp = $timestamp->epoch . $subsec;
+				}
+			} else {
+				# if ts_is_unixtime, then no need to parse it... just go ahead and use it
+				$full_timestamp = $timestamp_raw;
+			}
+
+			# only not going to be defined if the eval above failed for Time::Piece->strptime
+			if ( defined($full_timestamp) ) {
 				if ( !defined( $found->{$full_timestamp} ) ) {
 					$found->{$full_timestamp}          = [];
-					$timestamp_save->{$full_timestamp} = $timestamp;
+#					$timestamp_save->{$full_timestamp} = $timestamp;
 				}
 				push( @{ $found->{$full_timestamp} }, $item );
 			}
-		}
-	}
+		} ## end if ( $item =~ /$opts{regex}/ )
+	} ## end foreach my $item ( @{ $opts{items} } )
 
 	my @found_timestamps = sort( keys( %{$found} ) );
 	my $previous_timestamp;
 	my $previous_found;
-	my $previous_t;
+#	my $previous_t;
 	my @timestamp_to_return;
 	foreach my $current_timestamp (@found_timestamps) {
-		my $t = $timestamp_save->{$current_timestamp};
+#		my $t = $timestamp_save->{$current_timestamp};
 
-		if ( ( $opts{start} <= $t ) && ( $t <= $opts{end} ) ) {
+		if ( ( $start <= $current_timestamp ) && ( $current_timestamp <= $end ) ) {
 			push( @timestamp_to_return, $current_timestamp );
 
 			# if we find one that it is between, but not equal, then add the previous as that contains the start
-			if ( defined($previous_timestamp) && !$previous_found && ( $opts{start} != $t ) ) {
+			if ( defined($previous_timestamp) && !$previous_found && ( $start != $current_timestamp ) ) {
 				$previous_found = 1;
 				push( @timestamp_to_return, $previous_timestamp );
-			}
-			elsif ( !$previous_found && ( $opts{start} == $t ) ) {
+			} elsif ( !$previous_found && ( $start == $current_timestamp ) ) {
 				$previous_found = 1;
 			}
-		}
+		} ## end if ( ( $opts{start} <= $t ) && ( $t <= $opts...))
 
 		# if the time period falls between when two files was created, we will find
-		if ( !$previous_found && defined($previous_timestamp) && ( $opts{end} < $t ) ) {
+		if ( !$previous_found && defined($previous_timestamp) && ( $opts{end} < $current_timestamp ) ) {
 			$previous_found = 1;
 			push( @timestamp_to_return, $previous_timestamp );
 		}
 
 		$previous_timestamp = $current_timestamp;
-		$previous_t         = $t;
-	}
+#		$previous_t         = $current_timestamp;
+	} ## end foreach my $current_timestamp (@found_timestamps)
 
 	my $to_return = [];
 
@@ -185,7 +197,7 @@ sub find {
 	# the file name to write to
 
 	return $to_return;
-}
+} ## end sub find
 
 =head1 AUTHOR
 
