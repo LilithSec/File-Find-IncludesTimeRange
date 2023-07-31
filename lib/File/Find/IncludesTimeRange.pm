@@ -20,7 +20,7 @@ our $VERSION = '0.0.1';
 =head1 SYNOPSIS
 
     use File::Find::IncludesTimeRange;
-    usexs Time::Piece;
+    uses Time::Piece;
     use Data::Dumper;
 
     my @files=(
@@ -103,16 +103,17 @@ sub find {
 	}
 	elsif ( ref( $opts{items} ) ne 'ARRAY' ) {
 		die('$opts{items} is not a ARRAY');
-	}elsif ( $opts{start} > $opts{end} ) {
+	}
+	elsif ( $opts{start} > $opts{end} ) {
 		die('$opts{start} is greater than $opts{end}');
 	}
 
-	if (!defined($opts{strptime}) ) {
-		$opts{strptime}='%s';
+	if ( !defined( $opts{strptime} ) ) {
+		$opts{strptime} = '%s';
 	}
 
-	if (!defined($opts{regex})) {
-		$opts{regex}='(?<timestamp>\d\d\d\d\d\d+)(\.pcap|(?<subsec>\.\d+)\.pcap)$';
+	if ( !defined( $opts{regex} ) ) {
+		$opts{regex} = '(?<timestamp>\d\d\d\d\d\d+)(\.pcap|(?<subsec>\.\d+)\.pcap)$';
 	}
 
 	my $start = $opts{start}->epoch;
@@ -156,14 +157,15 @@ sub find {
 			if ( defined($previous_timestamp) && !$previous_found && ( $opts{start} != $t ) ) {
 				$previous_found = 1;
 				push( @timestamp_to_return, $previous_timestamp );
-			}elsif (!$previous_found && ( $opts{start} == $t ) ) {
+			}
+			elsif ( !$previous_found && ( $opts{start} == $t ) ) {
 				$previous_found = 1;
 			}
 		}
 
-		# if the time period falls between when two files was created, we will find 
-		if (!$previous_found && defined($previous_timestamp) && ( $opts{end} < $t )) {
-			$previous_found=1;
+		# if the time period falls between when two files was created, we will find
+		if ( !$previous_found && defined($previous_timestamp) && ( $opts{end} < $t ) ) {
+			$previous_found = 1;
 			push( @timestamp_to_return, $previous_timestamp );
 		}
 
@@ -171,13 +173,16 @@ sub find {
 		$previous_t         = $t;
 	}
 
-	my $to_return=[];
-	# the second sort is needed as if 
-	foreach my $item (sort(@timestamp_to_return)) {
-		foreach my $file (@{ $found->{$item} }) {
-			push(@{ $to_return }, $file);
+	my $to_return = [];
+
+	# the second sort is needed as if
+	foreach my $item ( sort(@timestamp_to_return) ) {
+		foreach my $file ( @{ $found->{$item} } ) {
+			push( @{$to_return}, $file );
 		}
 	}
+
+	# the file name to write to
 
 	return $to_return;
 }
