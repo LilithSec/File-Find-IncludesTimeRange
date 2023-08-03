@@ -11,11 +11,11 @@ File::Find::IncludesTimeRange - Takes a array of time stamped items(largely mean
 
 =head1 VERSION
 
-Version 0.1.0
+Version 0.1.1
 
 =cut
 
-our $VERSION = '0.1.0';
+our $VERSION = '0.1.1';
 
 =head1 SYNOPSIS
 
@@ -50,7 +50,16 @@ our $VERSION = '0.1.0';
                                                   regex=>'(?<timestamp>\d\d\d\d\d\d+)(\.pcap|(?<subsec>\.\d+)\.pcap)$',
                                                   strptime=>'%s',
                                                  );
+    print Dumper($found);
 
+    # do similar, but skip parsing the time stamp as it is already in unixtime
+    my $found=File::Find::IncludesTimeRange->find(
+                                                  items=>\@files,
+                                                  start=>$start,
+                                                  end=>$end,
+                                                  regex=>'(?<timestamp>(\d\d\d\d\d\d+|\d\d\d\d\d\+.\d+))\.pcap$',
+                                                  ts_is_unixtime => 1,
+                                                 );
     print Dumper($found);
 
 =head1 SUBROUTINES
@@ -225,10 +234,6 @@ You can also look for information at:
 =item * RT: CPAN's request tracker (report bugs here)
 
 L<https://rt.cpan.org/NoAuth/Bugs.html?Dist=File-Find-IncludesTimeRange>
-
-=item * CPAN Ratings
-
-L<https://cpanratings.perl.org/d/File-Find-IncludesTimeRange>
 
 =item * Search CPAN
 
