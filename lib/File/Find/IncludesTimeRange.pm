@@ -176,7 +176,14 @@ sub find {
 			} elsif ( !$previous_found && ( $start == $current_timestamp ) ) {
 				$previous_found = 1;
 			}
-		} ## end if ( ( $start <= $current_timestamp ) && (...))
+		} elsif ( defined($previous_timestamp)
+			&& !$previous_found
+			&& $previous_timestamp < $start
+			&& $current_timestamp > $end )
+		{
+			$previous_found = 1;
+			push( @timestamp_to_return, $previous_timestamp );
+		}
 
 		$previous_timestamp = $current_timestamp;
 	} ## end foreach my $current_timestamp (@found_timestamps)
